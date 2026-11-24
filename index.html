@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpeakBetter AI</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#090d19;--panel:#121a2c;--panel2:#18233a;
+--border:#293650;--text:#f3f5ff;--muted:#99a7c1;
+--purple:#8875ff;--green:#51d6a0;--red:#ff7777
+}
+body{
+background:var(--bg);color:var(--text);
+font-family:Arial,Helvetica,sans-serif;
+min-height:100vh;padding:20px 14px
+}
+.container{max-width:900px;margin:auto}
+header{text-align:center;padding:24px 0 30px}
+.logo{font-size:29px;font-weight:800;letter-spacing:-1px}
+.logo span{color:var(--purple)}
+header p{color:var(--muted);margin-top:10px;font-size:14px;line-height:1.6}
+.panel{
+background:var(--panel);border:1px solid var(--border);
+border-radius:17px;padding:20px;margin-bottom:17px
+}
+.heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.heading h2{font-size:16px}
+textarea{
+width:100%;min-height:180px;resize:vertical;
+background:#0c1322;color:var(--text);
+border:1px solid var(--border);border-radius:12px;
+padding:15px;font-size:16px;line-height:1.7;
+font-family:inherit;outline:none
+}
+textarea:focus{border-color:var(--purple)}
+textarea::placeholder{color:#65738d}
+.counter{text-align:right;color:var(--muted);font-size:12px;margin-top:7px}
+.label{display:block;color:var(--muted);font-size:13px;margin:17px 0 9px}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.mode{
+background:var(--panel2);color:var(--text);
+border:1px solid var(--border);padding:12px 8px;
+border-radius:10px;cursor:pointer;font-size:13px
+}
+.mode.active{border-color:var(--purple);color:#c9c1ff;background:#292344}
+button{cursor:pointer;font-family:inherit}
+.actions{display:flex;gap:10px;margin-top:17px}
+.primary{
+background:linear-gradient(135deg,#9180ff,#6652e8);
+color:white;border:0;border-radius:10px;
+padding:14px;font-size:15px;font-weight:bold;flex:1
+}
+.secondary{
+background:var(--panel2);color:var(--muted);
+border:1px solid var(--border);border-radius:10px;padding:12px 17px
+}
+button:disabled{opacity:.55;cursor:wait}
+.result{display:none}
+.result.show{display:block}
+.result-text{
+white-space:pre-wrap;overflow-wrap:anywhere;
+background:#0c1322;border:1px solid var(--border);
+border-radius:12px;padding:17px;font-size:16px;line-height:1.8
+}
+.result-actions{display:flex;gap:10px;margin-top:12px}
+.result-actions button{flex:1}
+.explanation{margin-top:22px}
+.explanation h3{font-size:15px;margin-bottom:12px}
+.summary{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:12px}
+.item{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:13px;margin-top:9px}
+.item p{font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.bad{color:var(--red)}
+.good{color:var(--green);margin-top:5px}
+.why{color:var(--muted);margin-top:7px}
+.status{display:none;text-align:center;font-size:13px;margin-top:13px;line-height:1.6;color:#c3baff}
+.status.show{display:block}
+.status.error{color:var(--red)}
+.settings summary{color:#c4bbff;cursor:pointer;font-size:14px}
+.settings-content{margin-top:15px}
+.settings-content label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+.settings-content input{
+width:100%;background:#0c1322;color:white;
+border:1px solid var(--border);border-radius:9px;padding:12px;font-size:14px
+}
+.note{font-size:12px;color:var(--muted);line-height:1.65;margin-top:12px}
+footer{text-align:center;color:var(--muted);font-size:12px;line-height:1.7;margin:25px 0}
+@media(max-width:600px){
+body{padding:12px}
+.panel{padding:15px}
+.modes{grid-template-columns:1fr}
+.actions,.result-actions{flex-direction:column}
+.secondary{width:100%}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+<div class="logo">✦ SpeakBetter <span>AI</span></div>
+<p>
+Advanced grammar correction, sentence reconstruction,
+and natural English writing.
+</p>
+</header>
+
+<section class="panel">
+
+<div class="heading">
+<h2>Your Text</h2>
+</div>
+
+<textarea id="input" maxlength="12000"
+placeholder="Type or paste your English here. You can enter sentences with incorrect grammar, spelling, tense, or word order."></textarea>
+
+<div class="counter" id="counter">0 / 12,000 characters</div>
+
+<span class="label">Correction mode</span>
+
+<div class="modes">
+<button class="mode active" data-mode="correct">Grammar Correction</button>
+<button class="mode" data-mode="reconstruct">Sentence Reconstruction</button>
+<button class="mode" data-mode="natural">Natural English</button>
+</div>
+
+<details class="settings panel" style="margin-top:17px;padding:14px">
+<summary>⚙️ AI Connection Settings</summary>
+
+<div class="settings-content">
+
+<label>AI API Key</label>
+<input id="apiKey" type="password" placeholder="Paste your API key">
+
+<label>AI API Endpoint</label>
+<input id="endpoint" value="https://api.openai.com/v1/responses">
+
+<label>AI Model</label>
+<input id="model" value="gpt-4.1-mini">
+
+<p class="note">
+Grammar Correction has a free grammar-check fallback.
+Sentence Reconstruction and Natural English require a compatible
+AI API connection. Your API key is not saved by this page.
+Never publish a personal API key inside a public website.
+</p>
+
+</div>
+</details>
+
+<div class="actions">
+<button class="primary" id="check">✦ Correct My Text</button>
+<button class="secondary" id="clear">Clear</button>
+</div>
+
+<div id="status" class="status"></div>
+</section>
+
+<section class="panel result" id="result">
+
+<div class="heading">
+<h2 id="resultTitle">Corrected Text</h2>
+</div>
+
+<div id="corrected" class="result-text"></div>
+
+<div class="result-actions">
+<button class="primary" id="apply">Apply Correction</button>
+<button class="secondary" id="copy">Copy Corrected Text</button>
+</div>
+
+<div class="explanation">
+<h3>Explanation</h3>
+<div id="summary" class="summary"></div>
+<div id="details"></div>
+</div>
+
+</section>
+
+<footer>
+SpeakBetter AI · Grammar · Reconstruction · Natural English
+<br>
+Review AI suggestions before using them.
+</footer>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+let mode = "correct";
+let lastCorrected = "";
+
+const modeNames = {
+correct: "Grammar Correction",
+reconstruct: "Sentence Reconstruction",
+natural: "Natural English"
+};
+
+$("input").addEventListener("input", () => {
+$("counter").textContent =
+`${$("input").value.length.toLocaleString()} / 12,000 characters`;
+});
+
+document.querySelectorAll(".mode").forEach(btn => {
+btn.addEventListener("click", () => {
+document.querySelectorAll(".mode").forEach(b => b.classList.remove("active"));
+btn.classList.add("active");
+mode = btn.dataset.mode;
+
+$("check").textContent =
+mode === "correct" ? "✦ Correct My Text" :
+mode === "reconstruct" ? "✦ Reconstruct My Text" :
+"✦ Make It Natural";
+});
+});
+
+function status(message, error=false) {
+$("status").textContent = message;
+$("status").className = "status show" + (error ? " error" : "");
+}
+
+function escapeHTML(text) {
+return String(text)
+.replaceAll("&","&amp;")
+.replaceAll("<","&lt;")
+.replaceAll(">","&gt;")
+.replaceAll('"',"&quot;")
+.replaceAll("'","&#039;");
+}
+
+function showResults(corrected, explanation, corrections=[]) {
+lastCorrected = corrected;
+
+$("corrected").textContent = corrected;
+$("summary").textContent = explanation || "";
+$("details").innerHTML = "";
+$("resultTitle").textContent = modeNames[mode] + " Result";
+
+if (!corrections || !corrections.length) {
+$("details").innerHTML = `
+<div class="item">
+<p class="good">No detailed correction notes were returned.</p>
+</div>`;
+} else {
+corrections.forEach(c => {
+const item = document.createElement("div");
+item.className = "item";
+
+item.innerHTML = `
+<p class="bad"><strong>Original:</strong> ${escapeHTML(c.original || "")}</p>
+<p class="good"><strong>Corrected:</strong> ${escapeHTML(c.corrected || "")}</p>
+<p class="why">${escapeHTML(c.explanation || "")}</p>`;
+
+$("details").appendChild(item);
+});
+}
+
+$("result").classList.add("show");
+}
+
+/* MODE-SPECIFIC AI INSTRUCTIONS */
+
+function getModeInstructions() {
+
+if (mode === "correct") {
+return `
+TASK: GRAMMAR CORRECTION
+
+Correct the user's English.
+
+Fix:
+- Grammar
+- Spelling
+- Punctuation
+- Verb tense
+- Subject-verb agreement
+- Articles
+- Pronouns
+- Prepositions
+- Singular and plural
+- Word order
+- Incorrect question structure
+- Run-on sentences
+- Sentence fragments
+- Comparisons
+- Incorrect expressions
+
+IMPORTANT:
+Do not unnecessarily rewrite the entire sentence if a simple correction is enough.
+Preserve the original meaning, tone, and vocabulary as much as possible.
+`;
+}
+
+if (mode === "reconstruct") {
+return `
+TASK: SENTENCE RECONSTRUCTION
+
+The user may submit English sentences with severely incorrect
+word order, broken sentence structure, missing words, mixed-up
+phrases, incomplete sentences, or confusing grammar.
+
+Your job is to REBUILD the sentences into correct English.
+
+You MUST:
+- Rearrange words and phrases when necessary.
+- Rebuild the entire sentence if its structure is broken.
+- Fix incorrect word order.
+- Fix grammar and verb forms.
+- Add necessary small grammatical words when clearly required.
+- Correct badly structured questions.
+- Fix fragments and run-on sentences.
+- Make the result clear and readable.
+- Preserve the user's intended meaning as closely as possible.
+
+Do NOT merely replace a few words.
+Do NOT keep the broken original word order.
+Do NOT invent facts or change the message.
+
+If the meaning is unclear, make the most reasonable interpretation
+and mention the uncertainty briefly in the summary.
+`;
+}
+
+return `
+TASK: NATURAL ENGLISH REWRITING
+
+Rewrite the user's text into fluent, natural, everyday English.
+
+You MUST:
+- Make the sentence sound like something a fluent English speaker
+  would naturally say.
+- Remove awkward, overly literal, robotic, or unnatural expressions.
+- Improve flow, phrasing, word choice, and readability.
+- Use natural conversational English when appropriate.
+- Keep the original meaning.
+- Keep the user's intended tone.
+- Do not make simple sentences unnecessarily formal.
+- Do not make the text excessively complicated.
+- Avoid changing facts or adding new information.
+
+This mode is NOT limited to fixing grammar.
+Even when the sentence is grammatically correct, improve unnatural
+phrasing when appropriate.
+`;
+}
+
+/* AI ENGINE */
+
+async function aiCorrection(text) {
+
+const key = $("apiKey").value.trim();
+const endpoint = $("endpoint").value.trim();
+const model = $("model").value.trim();
+
+if (!key) {
+throw new Error("AI API key is missing. Please open AI Connection Settings and connect an AI service.");
+}
+
+if (!endpoint || !model) {
+throw new Error("Please enter a valid AI endpoint and model.");
+}
+
+const instruction = `
+You are SpeakBetter AI, a professional English grammar,
+sentence reconstruction, and natural English rewriting assistant.
+
+${getModeInstructions()}
+
+GENERAL RULES:
+- Correct every sentence in the submitted text.
+- Preserve the user's intended meaning.
+- Never invent details.
+- Keep paragraph formatting when appropriate.
+- If text is already correct and natural for the selected mode,
+  leave it unchanged.
+- Provide a correctedText containing the complete corrected text.
+- Explain the important changes using simple English.
+- Return corrections as an array.
+- Respond ONLY with valid JSON.
+- Do not include Markdown fences.
+- Do not add text outside the JSON object.
+
+REQUIRED JSON FORMAT:
+
+{
+  "correctedText": "the complete rewritten text",
+  "summary": "short explanation of the changes",
+  "corrections": [
+    {
+      "original": "original wording",
+      "corrected": "improved wording",
+      "explanation": "simple explanation"
+    }
+  ]
+}
+
+USER TEXT:
+${text}
+`;
+
+const response = await fetch(endpoint, {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+"Authorization": "Bearer " + key
+},
+body: JSON.stringify({
+model: model,
+input: instruction
+})
+});
+
+if (!response.ok) {
+let message = "AI request failed with status " + response.status;
+
+try {
+const err = await response.json();
+message = err.error?.message || err.message || message;
+} catch {}
+
+throw new Error(message);
+}
+
+const data = await response.json();
+
+let output = data.output_text || "";
+
+if (!output && Array.isArray(data.output)) {
+for (const block of data.output) {
+if (Array.isArray(block.content)) {
+for (const part of block.content) {
+if (part.type === "output_text" && part.text) {
+output += part.text;
+}
+}
+}
+}
+}
+
+if (!output && data.choices?.[0]?.message?.content) {
+output = data.choices[0].message.content;
+}
+
+if (!output) {
+throw new Error("The AI returned an empty response. Try again.");
+}
+
+/* Robust JSON extraction */
+
+output = output
+.replace(/```json/gi, "")
+.replace(/```/g, "")
+.trim();
+
+let result;
+
+try {
+result = JSON.parse(output);
+} catch {
+const first = output.indexOf("{");
+const last = output.lastIndexOf("}");
+
+if (first === -1 || last === -1 || last <= first) {
+throw new Error("AI response was not valid JSON. Please try again.");
+}
+
+result = JSON.parse(output.substring(first, last + 1));
+}
+
+if (!result.correctedText) {
+throw new Error("AI did not return the corrected text.");
+}
+
+return {
+correctedText: String(result.correctedText),
+summary: result.summary || "Your text has been rewritten.",
+corrections: Array.isArray(result.corrections) ? result.corrections : []
+};
+}
+
+/* FREE GRAMMAR FALLBACK */
+
+async function freeGrammarCheck(text) {
+
+const body = new URLSearchParams();
+body.set("text", text);
+body.set("language", "en-US");
+
+const response = await fetch(
+"https://api.languagetool.org/v2/check",
+{
+method: "POST",
+headers: {
+"Content-Type": "application/x-www-form-urlencoded"
+},
+body
+}
+);
+
+if (!response.ok) {
+throw new Error("Free grammar service is currently unavailable.");
+}
+
+const data = await response.json();
+let corrected = text;
+const matches = data.matches || [];
+
+const usable = matches
+.filter(m => m.replacements && m.replacements.length)
+.sort((a,b) => b.offset - a.offset);
+
+const correctionNotes = [];
+
+usable.forEach(m => {
+const replacement = m.replacements[0].value;
+const original = corrected.substring(m.offset, m.offset + m.length);
+
+corrected =
+corrected.substring(0, m.offset) +
+replacement +
+corrected.substring(m.offset + m.length);
+
+correctionNotes.push({
+original: original,
+corrected: replacement,
+explanation: m.message || "Grammar or spelling suggestion."
+});
+});
+
+return {
+correctedText: corrected,
+summary: matches.length
+? "Grammar and spelling suggestions were found. The free checker cannot fully rewrite sentences or perform natural-English rewriting."
+: "No grammar or spelling issues were detected by the free checker.",
+corrections: correctionNotes.reverse()
+};
+}
+
+/* MAIN BUTTON */
+
+$("check").addEventListener("click", async () => {
+
+const text = $("input").value.trim();
+
+if (!text) {
+status("Please enter text first.", true);
+return;
+}
+
+$("check").disabled = true;
+$("check").textContent = "Analyzing...";
+$("result").classList.remove("show");
+
+try {
+
+let result;
+
+/* AI CONNECTED */
+
+if ($("apiKey").value.trim()) {
+
+status("AI is processing your text using " + modeNames[mode] + "...");
+
+result = await aiCorrection(text);
+
+showResults(
+result.correctedText,
+result.summary,
+result.corrections
+);
+
+status(modeNames[mode] + " completed successfully!");
+
+}
+
+/* NO API KEY: FREE GRAMMAR ONLY */
+
+else {
+
+if (mode !== "correct") {
+
+throw new Error(
+modeNames[mode] +
+" requires an AI connection. Open ⚙️ AI Connection Settings and add your API key. The free grammar checker only supports basic grammar and spelling."
+);
+
+}
+
+status("Using free grammar checker...");
+
+result = await freeGrammarCheck(text);
+
+showResults(
+result.correctedText,
+result.summary,
+result.corrections
+);
+
+status("Free Grammar Correction completed!");
+}
+
+$("result").scrollIntoView({
+behavior:"smooth",
+block:"start"
+});
+
+} catch (error) {
+
+status(error.message || "Something went wrong. Please try again.", true);
+
+} finally {
+
+$("check").disabled = false;
+
+$("check").textContent =
+mode === "correct" ? "✦ Correct My Text" :
+mode === "reconstruct" ? "✦ Reconstruct My Text" :
+"✦ Make It Natural";
+
+}
+});
+
+/* CLEAR */
+
+$("clear").addEventListener("click", () => {
+
+$("input").value = "";
+$("counter").textContent = "0 / 12,000 characters";
+$("result").classList.remove("show");
+$("status").className = "status";
+lastCorrected = "";
+
+});
+
+/* APPLY */
+
+$("apply").addEventListener("click", () => {
+
+if (!lastCorrected) return;
+
+$("input").value = lastCorrected;
+
+$("counter").textContent =
+`${lastCorrected.length.toLocaleString()} / 12,000 characters`;
+
+$("result").classList.remove("show");
+
+status("Corrected text applied!");
+
+});
+
+/* COPY */
+
+$("copy").addEventListener("click", async () => {
+
+if (!lastCorrected) return;
+
+try {
+
+await navigator.clipboard.writeText(lastCorrected);
+status("Corrected text copied!");
+
+} catch {
+
+status("Copy failed. Please copy the text manually.", true);
+
+}
+
+});
+
+</script>
+</body>
+</html>
